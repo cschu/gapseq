@@ -6,6 +6,12 @@ curdir=$(pwd)
 path=$(readlink -f "$0")
 dir=$(dirname "$path")
 
+if [[ ! -z "${GAPSEQ_SEQDB}" ]]; then
+    seqpath_prefix=$GAPSEQ_SEQDB
+else
+    seqpath_prefix=$dir/dat/seq
+fi
+
 medium=$dir/dat/media/ALLmed.csv
 verbose=0
 n_threads=1
@@ -101,9 +107,9 @@ if [[ "$parse_options" == true ]]; then
                 cd $dir
                 git_rev=$(git rev-parse --short HEAD 2>/dev/null)
                 echo gapseq version: $version $git_rev
-                if [ -d "$dir/dat/seq/Bacteria/rev" ]; then
-                    Bseqdb_version=`md5sum $dir/dat/seq/Bacteria/rev/sequences.tar.gz | cut -c1-7`
-                    Bseqdb_date=$(stat -c %y $dir/dat/seq/Bacteria/rev/sequences.tar.gz | cut -c1-10)
+                if [ -d "$seqpath_prefix/Bacteria/rev" ]; then
+                    Bseqdb_version=`md5sum $seqpath_prefix/Bacteria/rev/sequences.tar.gz | cut -c1-7`
+                    Bseqdb_date=$(stat -c %y $seqpath_prefix/Bacteria/rev/sequences.tar.gz | cut -c1-10)
                     echo "Sequence DB md5sum: $Bseqdb_version ($Bseqdb_date, Bacteria)"
                 else
                     echo """
@@ -111,9 +117,9 @@ if [[ "$parse_options" == true ]]; then
     Get the latest version by running: 'bash ./src/update_sequences.sh' in your gapseq installation directory.
                         """
                 fi
-                if [ -d "$dir/dat/seq/Archaea/rev" ]; then
-                    Aseqdb_version=`md5sum $dir/dat/seq/Archaea/rev/sequences.tar.gz | cut -c1-7`
-                    Aseqdb_date=$(stat -c %y $dir/dat/seq/Archaea/rev/sequences.tar.gz | cut -c1-10)
+                if [ -d "$seqpath_prefix/Archaea/rev" ]; then
+                    Aseqdb_version=`md5sum $seqpath_prefix/Archaea/rev/sequences.tar.gz | cut -c1-7`
+                    Aseqdb_date=$(stat -c %y $seqpath_prefix/Archaea/rev/sequences.tar.gz | cut -c1-10)
                     echo "Sequence DB md5sum: $Aseqdb_version ($Aseqdb_date, Archaea)"
                 else
                     echo """

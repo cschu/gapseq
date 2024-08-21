@@ -4,7 +4,14 @@
 curdir=$(pwd)
 path=$(readlink -f "$0")
 dir=$(dirname "$path")
-seqpath=$dir/../dat/seq
+
+if [[ ! -z "${GAPSEQ_SEQDB}" ]]; then
+    seqpath_prefix=$GAPSEQ_SEQDB
+else
+    seqpath_prefix=$dir/../dat/seq
+fi
+
+seqpath=$seqpath_prefix
 echo Target directory: $seqpath
 
 echo Downloading uniprot swisspot database

@@ -350,7 +350,7 @@ esac
 
 # determine taxonomy
 if [ $input_mode == "prot" ] && [ $taxonomy == "auto" ]; then
-    cp $dir/../dat/seq/hmm/domain.hmm.gz .
+    cp $dir/../dat/hmm/domain.hmm.gz .
     gunzip domain.hmm.gz
     hmmsearch --tblout $fastaID.tblout --cpu $n_threads domain.hmm $fasta > /dev/null
     taxonomy=`Rscript $dir/predict_domain.R "$dir" "$fastaID.tblout"`
@@ -382,8 +382,15 @@ fi
 
 # squence directory
 export LC_NUMERIC="en_US.UTF-8"
-seqpath=$dir/../dat/seq/$taxonomy
-seqpath_user=$dir/../dat/seq/$taxonomy/user
+
+if [[ ! -z "${GAPSEQ_SEQDB}" ]]; then
+    seqpath_prefix=$GAPSEQ_SEQDB
+else
+    seqpath_prefix=$dir/../dat/seq
+fi
+
+seqpath=$seqpath_prefix/$taxonomy
+seqpath_user=$seqpath_prefix/$taxonomy/user
 mkdir -p $seqpath/rev $seqpath/unrev $seqpath_user
 
 #check for updates if internet connection is available
@@ -392,7 +399,7 @@ if [[ "$force_offline" = false ]]; then
     is_online=$?
     [[ `pgrep -f $0` != "$$" ]] && is_running=yes
     if [[ $is_online -eq 0 && -z "$is_running" ]]; then
-        $dir/update_sequences.sh $taxonomy
+        $dir/update_sequences.sh $taxonomy $seqpath_prefix
     fi
     if [[ ! -f $seqpath/rev/sequences.tar.gz  ]] || [[ ! -f $seqpath/unrev/sequences.tar.gz ]] || [[ ! -f $seqpath/rxn/sequences.tar.gz ]]; then
         echo ATTENTION: gapseq sequence archives are missing! Sequences will be needed to be downloaded from uniprot directly which is rather slow.
@@ -930,7 +937,7 @@ do
                                 subiter_log=$(cat reactions.tbl | awk -F "\t" -v rea="$rea" -v subiter_tmp="$subiter_tmp" '$1==rea && $18==subiter_tmp { print $0 }')
                             fi
                             echo "$subiter_log" | awk -F "\t" '{print ">"$5"\n"$13}' > $rea.hit.$iter.fasta
-                            blastp -db $dir/../dat/seq/uniprot_sprot -query "$rea.hit.$iter.fasta" -outfmt '6 pident bitscore qcovs sseqid qseqid' > $rea.hit.blast 2>/dev/null
+                            blastp -db $seqpath_prefix/uniprot_sprot -query "$rea.hit.$iter.fasta" -outfmt '6 pident bitscore qcovs sseqid qseqid' > $rea.hit.blast 2>/dev/null
 
                             #forward_hit=$(echo "$bhit" | sort -rgk 4,4 | cut -f1 | sed 's/UniRef90_//g' | sort | uniq | tr '\n' '|' | sed 's/|$//g')
                             forward_hit=$(echo "$subiter_log" | awk -F "\t" '{print $5}' | sort -rgk 4,4 | cut -f1 | sed 's/UniRef90_//g' | sort | uniq | tr '\n' '|' | sed 's/|$//g')
@@ -945,7 +952,7 @@ do
                                 else
                                     [[ verbose -ge 1 ]] && echo -e "\t\t\t--> BIDIRECTIONAL hit found for $subiter_tmp <--"
                                 fi
-                                grep -E $bidihit $dir/../dat/seq/uniprot_sprot.fasta | head -3 | sed -e 's/^/\t\t\t    /'
+                                grep -E $bidihit $seqpath_prefix/uniprot_sprot.fasta | head -3 | sed -e 's/^/\t\t\t    /'
                                 is_bidihit=true
                             else
                                 is_bidihit=false
@@ -1103,8 +1110,8 @@ cp output.tbl $output_dir/${fastaID}-$output_suffix-Pathways.tbl
 
 # add gapseq version and sequence database status to table comments head
 gapseq_version=$($dir/.././gapseq -v | head -n 1)
-seqdb_version=`md5sum $dir/../dat/seq/$taxonomy/rev/sequences.tar.gz | cut -c1-7`
-seqdb_date=$(stat -c %y $dir/../dat/seq/$taxonomy/rev/sequences.tar.gz | cut -c1-10)
+seqdb_version=`md5sum $seqpath_prefix/$taxonomy/rev/sequences.tar.gz | cut -c1-7`
+seqdb_date=$(stat -c %y $seqpath_prefix/$taxonomy/rev/sequences.tar.gz | cut -c1-10)
 
 sed -i "1s/^/# $gapseq_version\n/" $output_dir/${fastaID}-$output_suffix-Reactions.tbl
 sed -i "2s/^/# Sequence DB md5sum: $seqdb_version ($seqdb_date, $taxonomy)\n/" $output_dir/${fastaID}-$output_suffix-Reactions.tbl
