@@ -13,10 +13,10 @@ if [[ -z "$1" ]]; then
 else taxonomy=$1
 fi
 
-if [[ -z "$2" ]]; then
-  seqpath_prefix=$dir/../dat/seq
+if [[ ! -z "${GAPSEQ_SEQDB}" ]]; then
+    seqpath_prefix=$GAPSEQ_SEQDB
 else
-  seqpath_prefix=$2
+    seqpath_prefix=$dir/../dat/seq
 fi
 
 seqpath=$seqpath_prefix/$taxonomy
